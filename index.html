@@ -7,40 +7,345 @@
   <script language="javascript" src="libraries/Box2d.js"></script>
 
   <script language="javascript" type="text/javascript" src="sketch.js"></script>
-  <script language="javascript" type="text/javascript" src="ConnectionGene.js"></script>
-  <script language="javascript" type="text/javascript" src="ConnectionHistory.js"></script>
-  <script language="javascript" type="text/javascript" src="Node.js"></script>
-  <script language="javascript" type="text/javascript" src="Player.js"></script>
-  <script language="javascript" type="text/javascript" src="Population.js"></script>
-  <script language="javascript" type="text/javascript" src="Species.js"></script>
-  <script language="javascript" type="text/javascript" src="Genome.js"></script>
+  <script language="javascript" type="text/javascript" src="Wheel.js"></script>
+  <script language="javascript" type="text/javascript" src="Car.js"></script>
+  <script language="javascript" type="text/javascript" src="Ground.js"></script>
+  <script language="javascript" type="text/javascript" src="Person.js"></script>
 
-    <script language="javascript" type="text/javascript" src="Wheel.js"></script>
-    <script language="javascript" type="text/javascript" src="Car.js"></script>
-    <script language="javascript" type="text/javascript" src="Ground.js"></script>
-    <script language="javascript" type="text/javascript" src="Person.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      background: #87CEEB;
+      font-family: Arial, sans-serif;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    #main {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 100px;
+      z-index: 100;
+    }
+    
+    .pedal {
+      width: 120px;
+      height: 120px;
+      border-radius: 15px;
+      border: 4px solid #333;
+      background: linear-gradient(145deg, #ddd, #999);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      transition: all 0.1s ease;
+    }
+    
+    .pedal:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      background: linear-gradient(145deg, #ccc, #888);
+    }
+    
+    #brakeBtn {
+      background: linear-gradient(145deg, #ff6b6b, #cc5555);
+      color: white;
+    }
+    
+    #brakeBtn:active {
+      background: linear-gradient(145deg, #ee5555, #bb4444);
+    }
+    
+    #gasBtn {
+      background: linear-gradient(145deg, #51cf66, #40a954);
+      color: white;
+    }
+    
+    #gasBtn:active {
+      background: linear-gradient(145deg, #45c25a, #3a9648);
+    }
+
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-size: 24px;
+      background: rgba(0,0,0,0.7);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 100;
+      font-weight: bold;
+    }
+    
+    #levelInfo {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 20px;
+      background: rgba(0,0,0,0.7);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 100;
+      font-weight: bold;
+      text-align: right;
+    }
+    
+    #gameOverScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      text-align: center;
+    }
+    
+    #gameOverScreen h1 {
+      font-size: 72px;
+      color: #ff6b6b;
+      margin-bottom: 30px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+    }
+    
+    #gameOverScreen .score {
+      font-size: 48px;
+      margin: 20px 0;
+      color: #51cf66;
+    }
+    
+    #gameOverScreen .restart {
+      font-size: 32px;
+      margin-top: 40px;
+      padding: 15px 30px;
+      background: #51cf66;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    
+    #gameOverScreen .restart:hover {
+      background: #40a954;
+    }
+    
+    #levelCompleteScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 100, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      text-align: center;
+    }
+    
+    #levelCompleteScreen h1 {
+      font-size: 72px;
+      color: #51cf66;
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+    }
+    
+    #levelCompleteScreen .info {
+      font-size: 36px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    
+    #levelCompleteScreen .next-level {
+      font-size: 28px;
+      margin: 20px 0;
+      color: #ffeb3b;
+    }
+    
+    #levelCompleteScreen .button {
+      font-size: 32px;
+      margin: 20px 10px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    
+    #levelCompleteScreen .next-btn {
+      background: #51cf66;
+      color: white;
+    }
+    
+    #levelCompleteScreen .next-btn:hover {
+      background: #40a954;
+    }
+    
+    #levelCompleteScreen .restart-btn {
+      background: #ff9800;
+      color: white;
+    }
+    
+    #levelCompleteScreen .restart-btn:hover {
+      background: #f57c00;
+    }
+    
+    /* Vertical Gas and Brake Indicators */
+    .vertical-indicator {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 300px;
+      border: 3px solid #333;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 200;
+      display: flex;
+      flex-direction: column-reverse;
+      overflow: hidden;
+    }
+    
+    .vertical-indicator.left {
+      left: 20px;
+    }
+    
+    .vertical-indicator.right {
+      right: 20px;
+    }
+    
+    .indicator-fill {
+      width: 100%;
+      transition: height 0.1s ease;
+      border-radius: 0 0 17px 17px;
+    }
+    
+    .indicator-fill.gas {
+      background: linear-gradient(to top, #51cf66, #40a954);
+    }
+    
+    .indicator-fill.brake {
+      background: linear-gradient(to top, #ff6b6b, #cc5555);
+    }
+    
+    .indicator-label {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      text-align: center;
+      white-space: nowrap;
+    }
+    
+    .indicator-percentage {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-
-    <div id = "main">
-      <h2> Hill Climb Racing </h2>
-      <div id = "canvas">
+  <div id="main">
+    <div id="gameCanvas"></div>
+    
+    <!-- Vertical Gas and Brake Indicators -->
+    <div class="vertical-indicator right" id="gasIndicator">
+      <div class="indicator-fill gas" id="gasFill"></div>
+      <div class="indicator-label">GAS</div>
+      <div class="indicator-percentage" id="gasPercentage">0%</div>
+    </div>
+    
+    <div class="vertical-indicator left" id="brakeIndicator">
+      <div class="indicator-fill brake" id="brakeFill"></div>
+      <div class="indicator-label">BRAKE</div>
+      <div class="indicator-percentage" id="brakePercentage">0%</div>
+    </div>
+    
+    <div id="info">
+      <div>Distance: <span id="distance">0</span>m</div>
+      <div>Speed: <span id="speed">0</span> km/h</div>
+      <div>Remaining: <span id="remainingDistance">2000</span>m</div>
+    </div>
+    
+    <div id="levelInfo">
+      <div>Level <span id="currentLevelNum">1</span></div>
+      <div><span id="currentLevelName">Countryside</span></div>
+      <div>Best: <span id="levelBestScore">0</span>m</div>
+    </div>
+    
+    <div id="controls">
+      <div class="pedal" id="brakeBtn">BRAKE</div>
+      <div class="pedal" id="gasBtn">GAS</div>
+    </div>
+    
+    <div id="gameOverScreen">
+      <h1>CRASHED!</h1>
+      <div class="score">Final Distance: <span id="finalDistance">0</span>m</div>
+      <div class="score">Best Score: <span id="bestScore">0</span>m</div>
+      <button class="restart" id="restartBtn">RESTART LEVEL</button>
+      <div style="margin-top: 20px; font-size: 18px; opacity: 0.8;">Press R to restart</div>
+    </div>
+    
+    <div id="levelCompleteScreen">
+      <h1>LEVEL COMPLETED!</h1>
+      <div class="info">Level: <span id="completedLevelName">Countryside</span></div>
+      <div class="info">Distance: <span id="completedDistance">0</span>m</div>
+      <div class="info">Best Score: <span id="completedBestScore">0</span>m</div>
+      <div>
+        <button id="nextLevelBtn" class="button next-btn">NEXT LEVEL</button>
+        <button id="restartCurrentBtn" class="button restart-btn">RESTART LEVEL</button>
       </div>
+      <div style="margin-top: 20px; font-size: 18px; opacity: 0.8;">Press N for next level or R to restart</div>
+    </div>
   </div>
 
-
   <script>
-    //center the canvas
-    var tempString = ""+((window.innerWidth*0.9- 1026 - window.innerWidth*0.9*0.08 )/2)+ "px";
-    document.getElementById("main").style.marginLeft = tempString;
-
-
-    window.onresize = function(event) {
-      var tempString = ""+((window.innerWidth*0.9- 1026 - window.innerWidth*0.9*0.08 )/2)+ "px";
-      document.getElementById("main").style.marginLeft = tempString;
-    };
-
+    // The event listeners are now handled in sketch.js
+    // This script section can be simplified or removed
   </script>
-
 </body>
 </html>

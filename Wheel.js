@@ -96,11 +96,10 @@ class Wheel {
   }
 
   show() {
-    push();
-
     let x = this.body.GetPosition().x * SCALE;
     let y = this.body.GetPosition().y * SCALE;
     let angle = this.body.GetAngle();
+    push();
     translate(x - panX, y - panY);
     rotate(angle);
 

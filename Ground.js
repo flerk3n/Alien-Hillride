@@ -16,9 +16,87 @@ class Ground {
     this.steepness = 250;
 
     this.grassPositions = [];
-    this.steepnessLevel = 50 + difficulty; //from 0 to 200
+    this.steepnessLevel = 50; //from 0 to 200
     this.estimatedDIfficulty = 0;
 
+  }
+
+  generateLevelTerrain(difficulty, steepness, maxDistance) {
+    this.distance = maxDistance;
+    this.steepnessLevel = steepness;
+    
+    let startingPoint = random(100000);
+    let totalDifference = 0;
+    
+    for (var i = 0; i < this.distance; i += this.smoothness) {
+      let progress = i / this.distance; // 0 to 1
+      
+      // Gradually increase difficulty throughout the level
+      let currentDifficulty = difficulty + (progress * difficulty * 0.5);
+      
+      // Different terrain patterns based on level
+      let noisedY;
+      let heightAddition = 0;
+      
+      if (difficulty <= 30) {
+        // Early levels: mostly flat with gentle hills
+        noisedY = noise(startingPoint + i / (800 - currentDifficulty)) * 0.7 + 0.15;
+        let flatLength = 300;
+        if (i < flatLength) {
+          noisedY = 0.3 + (sin(i / 100) * 0.1);
+          heightAddition = (flatLength - i) / 5;
+        }
+      } else if (difficulty <= 60) {
+        // Mid levels: rolling hills
+        noisedY = noise(startingPoint + i / (700 - currentDifficulty)) * 0.8 + 0.1;
+        noisedY += sin(i / 200) * 0.15; // Add rolling wave pattern
+      } else if (difficulty <= 100) {
+        // High levels: mountains and valleys
+        noisedY = noise(startingPoint + i / (600 - currentDifficulty)) * 0.9;
+        noisedY += sin(i / 150) * 0.2 + cos(i / 300) * 0.15;
+      } else {
+        // Extreme levels: very steep and chaotic
+        noisedY = noise(startingPoint + i / (500 - currentDifficulty)) * 1.0;
+        noisedY += sin(i / 100) * 0.25 + cos(i / 200) * 0.2;
+        noisedY += noise(startingPoint + i / 50) * 0.3; // Add high frequency noise
+      }
+      
+      let maxHeight = 200 + map(currentDifficulty, 0, 200, 0, 400);
+      let minHeight = 30;
+      
+      this.vectors.push(new Vec2(i, canvas.height - map(noisedY, 0, 1, minHeight, maxHeight) + heightAddition));
+      
+      if (i > 0) {
+        totalDifference += abs(this.vectors[this.vectors.length - 2].y - this.vectors[this.vectors.length - 1].y);
+      }
+
+      //add grass
+      for (var j = 0; j < 2; j++) {
+        if (random(1) < 0.05) {
+          this.grassPositions.push(floor(random(grassSprites.length)));
+        } else {
+          if (i != 0 && this.grassPositions[this.grassPositions.length - 1] != -1 && random(1) < 0.7) {
+            this.grassPositions.push(floor(random(grassSprites.length)));
+            if (this.grassPositions[this.grassPositions.length - 1] == this.grassPositions[this.grassPositions.length - 2]) {
+              this.grassPositions[this.grassPositions.length - 1] = floor(random(grassSprites.length));
+            }
+          } else {
+            this.grassPositions.push(-1);
+          }
+        }
+      }
+    }
+    
+    console.log("Level terrain generated with difficulty:", difficulty, "steepness:", steepness);
+
+    this.vectors.push(new Vec2(this.distance, canvas.height + this.grassThickness * 2));
+    this.vectors.push(new Vec2(0, canvas.height + this.grassThickness * 2));
+    spawningY = this.vectors[0].y - 150;
+
+    for (var vect of this.vectors) {
+      vect.x /= SCALE;
+      vect.y /= SCALE;
+    }
   }
 
   randomizeGround() {
@@ -66,7 +144,7 @@ class Ground {
 
     this.vectors.push(new Vec2(this.distance, canvas.height + this.grassThickness * 2));
     this.vectors.push(new Vec2(0, canvas.height + this.grassThickness * 2));
-    spawningY = this.vectors[10].y - 100;
+    spawningY = this.vectors[0].y - 150;
 
     for (var vect of this.vectors) {
       vect.x /= SCALE;
