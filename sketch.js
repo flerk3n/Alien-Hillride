@@ -107,7 +107,6 @@ var levelDistance = 2000; // Each level is 2000m
 var flagSprite;
 
 var skySprite;
-var darknessSprite;
 var grassSprites = [];
 
 // Level system variables
@@ -435,7 +434,6 @@ function preload() {
   headSprite = loadImage("head.png");
   wheelSprite = loadImage("wheel.png");
   skySprite = loadImage("sky.png");
-  darknessSprite = loadImage("darkness.png");
   ufoSprite = loadImage("ufo.png");
 
   // Load the available grass sprites
