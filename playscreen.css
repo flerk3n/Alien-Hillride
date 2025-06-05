@@ -1,0 +1,44 @@
+/* Custom Play Screen Styles */
+/* This ensures the play screen appears at the frontmost layer */
+
+#gameCanvas {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure the play screen canvas content has the highest priority */
+.playscreen-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999 !important;
+  pointer-events: auto;
+}
+
+/* Hide other UI elements when play screen is active */
+.playscreen-active #info,
+.playscreen-active #levelInfo,
+.playscreen-active #controls,
+.playscreen-active .vertical-indicator {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Make sure the play screen button is clickable */
+.play-button-area {
+  cursor: pointer;
+  z-index: 10000 !important;
+}
+
+/* Smooth transitions */
+.playscreen-transition {
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* Custom cursor for play button area */
+.play-button-hover {
+  cursor: pointer !important;
+} 

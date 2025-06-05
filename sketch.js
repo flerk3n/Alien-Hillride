@@ -1,4 +1,4 @@
-//Hill Climb Racing - Manual Control Version with Levels
+//Alien Racing Game - Custom Play Screen Version with Levels
 
 // Initialize Box2D variables immediately
 var Vec2, b2BodyDef, b2Body, b2FixtureDef, b2Fixture, b2World, b2MassData;
@@ -113,10 +113,10 @@ var grassSprites = [];
 // Level system variables
 var levels = [
   { name: "Beginner Hills", difficulty:50, maxDistance: 10000 },
-  { name: "Rocky Roads", difficulty: 70, maxDistance: 15000 },
-  { name: "Mountain Pass", difficulty: 80, maxDistance: 18000 },
-  { name: "Extreme Cliffs", difficulty: 110, maxDistance: 20000 },
-  { name: "Death Valley", difficulty: 130, maxDistance: 25000 }
+  { name: "Rocky Roads", difficulty: 60, maxDistance: 15000 },
+  { name: "Mountain Pass", difficulty: 70, maxDistance: 18000 },
+  { name: "Extreme Cliffs", difficulty: 90, maxDistance: 20000 },
+  { name: "Death Valley", difficulty: 110, maxDistance: 25000 }
 ];
 
 var maxDistanceReached = 0;
@@ -133,6 +133,12 @@ var lastCarX = 0;
 var gasPressed = false;
 var brakePressed = false;
 
+// Crash analysis tracking
+var recentGasUsage = [];
+var recentBrakeUsage = [];
+var recentSpeeds = [];
+var analysisWindowSize = 180; // Track last 3 seconds at 60fps
+
 // Controller support variables
 var gamepadConnected = false;
 var gamepadIndex = -1;
@@ -148,17 +154,169 @@ var brakeIntensity = 0;
 // UI elements for indicators
 var gasFill, gasPercentage, brakeFill, brakePercentage;
 
+// UFO AI Assistant
+var ufo;
+var ufoSprite;
+var crashAnalysis = {
+  gasUsage: 0,
+  brakeUsage: 0,
+  speed: 0,
+  terrain: "normal"
+};
+
+// UFO class for AI assistance
+class UFO {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.targetX = 0;
+    this.targetY = 0;
+    this.bobOffset = 0;
+    this.scale = 1;
+    this.visible = true;
+    this.crashed = false;
+    this.analysisComplete = false;
+    this.advice = "";
+  }
+  
+  update(carX, carY) {
+    if (!this.crashed) {
+      // Follow car with some offset
+      this.targetX = carX;
+      this.targetY = carY - 200; // Fly above the car
+      
+      // Smooth movement
+      this.x = lerp(this.x, this.targetX, 0.08);
+      this.y = lerp(this.y, this.targetY, 0.06);
+      
+      // Add floating animation
+      this.bobOffset += 0.05;
+    } else {
+      // Zoom in during crash
+      this.scale = lerp(this.scale, 2.0, 0.05);
+      this.targetX = carX;
+      this.targetY = carY - 150;
+      this.x = lerp(this.x, this.targetX, 0.1);
+      this.y = lerp(this.y, this.targetY, 0.1);
+    }
+  }
+  
+  onCrash(gasUsage, brakeUsage, speed, terrain) {
+    console.log("UFO Crash Analysis triggered!");
+    console.log("Gas usage:", gasUsage, "Brake usage:", brakeUsage, "Speed:", speed);
+    
+    this.crashed = true;
+    this.analysisComplete = false;
+    
+    // Store crash data for analysis
+    crashAnalysis.gasUsage = gasUsage;
+    crashAnalysis.brakeUsage = brakeUsage;
+    crashAnalysis.speed = speed;
+    crashAnalysis.terrain = terrain;
+    
+    // Generate advice immediately
+    this.advice = this.generateAdvice();
+    this.analysisComplete = true;
+    console.log("UFO Analysis complete:", this.advice);
+  }
+  
+  generateAdvice() {
+    let advice = "";
+    let gasPercent = Math.round(crashAnalysis.gasUsage);
+    let brakePercent = Math.round(crashAnalysis.brakeUsage);
+    let speed = Math.round(crashAnalysis.speed);
+    
+    console.log("Generating advice for - Gas:", gasPercent, "Brake:", brakePercent, "Speed:", speed);
+    
+    // Check if this was actually an idle situation (very low activity)
+    if (gasPercent < 10 && brakePercent < 10 && speed < 5) {
+      advice = `Looks like you were idle! Try using the gas pedal (spacebar or right arrow) to start moving. Use brake (left arrow) carefully on hills!`;
+      return advice;
+    }
+    
+    // Analyze crash conditions and provide specific advice
+    if (speed > 60) {
+      advice = `CRASHED AT HIGH SPEED! You were going ${speed} km/h. Try using gas at ${Math.max(30, gasPercent - 20)}% and brake at ${Math.min(80, brakePercent + 30)}% on steep terrain.`;
+    } else if (gasPercent > 80 && speed > 40) {
+      advice = `TOO MUCH GAS! You were using ${gasPercent}% gas at ${speed} km/h. Try gas at ${Math.max(40, gasPercent - 30)}% and brake at ${Math.min(70, brakePercent + 20)}% for better control.`;
+    } else if (brakePercent < 20 && speed > 35) {
+      advice = `NOT ENOUGH BRAKING! You only used ${brakePercent}% brake at ${speed} km/h. Try gas at ${Math.max(50, gasPercent)}% and brake at ${Math.min(90, brakePercent + 40)}% before hills.`;
+    } else if (gasPercent < 30 && speed < 20) {
+      advice = `TOO LITTLE POWER! You only used ${gasPercent}% gas and ${speed} km/h speed. Use gas at ${Math.min(70, gasPercent + 30)}% and brake at ${Math.max(10, brakePercent - 10)}% to maintain momentum.`;
+    } else if (speed > 40 && Math.abs(gasPercent - brakePercent) < 10) {
+      advice = `CONFLICTING CONTROLS! You used gas at ${gasPercent}% and brake at ${brakePercent}% simultaneously. Try alternating between gas and brake instead of using both.`;
+    } else if (brakePercent > 60 && gasPercent > 60) {
+      advice = `BOTH PEDALS AT ONCE! You used ${gasPercent}% gas and ${brakePercent}% brake together. This causes instability - use one at a time!`;
+    } else {
+      advice = `BALANCE NEEDED! You used ${gasPercent}% gas and ${brakePercent}% brake at ${speed} km/h. Try gas at ${Math.max(20, Math.min(60, gasPercent + 10))}% and brake at ${Math.max(20, Math.min(60, brakePercent + 10))}% for stability.`;
+    }
+    
+    return advice;
+  }
+  
+  reset() {
+    this.crashed = false;
+    this.analysisComplete = false;
+    this.scale = 1;
+    this.advice = "";
+  }
+  
+  show() {
+    if (!this.visible) return;
+    
+    // Only show UFO in the game world when not crashed
+    if (!this.crashed) {
+      push();
+      translate(this.x - panX, this.y - panY + Math.sin(this.bobOffset) * 3);
+      scale(this.scale);
+      
+      // Draw UFO image centered - 1.5x larger (120x75 instead of 80x50)
+      imageMode(CENTER);
+      image(ufoSprite, 0, 0, 120, 75);
+      
+      pop();
+    }
+    // When crashed, the UFO will be shown in the crash screen HTML instead
+  }
+  
+  showAdviceDialogue() {
+    // This method is no longer used - advice is shown in the crash screen
+    // Keeping it empty for compatibility but it won't be called
+  }
+}
+
 // Load best level from localStorage
 function loadProgress() {
-  const savedLevel = localStorage.getItem('hillClimbCurrentLevel');
-  const savedBestScores = localStorage.getItem('levelBestScores');
+  // Check if we want to continue from saved progress
+  const urlParams = new URLSearchParams(window.location.search);
+  const continueGame = urlParams.get('continue') === 'true';
   
-  if (savedLevel) {
-    currentLevel = Math.min(parseInt(savedLevel), levels.length - 1);
+  if (continueGame) {
+    // Only load saved progress if explicitly requested
+    const savedLevel = localStorage.getItem('hillClimbCurrentLevel');
+    if (savedLevel) {
+      currentLevel = Math.min(parseInt(savedLevel), levels.length - 1);
+    } else {
+      currentLevel = 0; // Default to level 1 if no save data
+    }
+  } else {
+    // Default behavior: always start from level 1
+    currentLevel = 0;
   }
+  
+  // Always load best scores regardless
+  const savedBestScores = localStorage.getItem('levelBestScores');
   if (savedBestScores) {
     levelBestScores = JSON.parse(savedBestScores);
   }
+}
+
+// Function to reset all progress and start from level 1
+function resetToLevel1() {
+  currentLevel = 0;
+  localStorage.setItem('hillClimbCurrentLevel', '0');
+  updateLevelUI();
+  initializeGame();
 }
 
 // Flag class for finish line
@@ -278,6 +436,7 @@ function preload() {
   wheelSprite = loadImage("Pics/wheel.png");
   skySprite = loadImage("Pics/sky.png");
   darknessSprite = loadImage("Pics/darkness.png");
+  ufoSprite = loadImage("Pics/ufo.png");
 
   // Load the available grass sprites
   grassSprites[0] = loadImage("Pics/grass.png");
@@ -390,13 +549,25 @@ function initializeGame() {
   ground.setBodies(world);
   
   // Create finish flag at the end of the level
-  finishFlag = new FinishFlag(levels[currentLevel].maxDistance - 100, spawningY - 100, world);
+  let flagX = levels[currentLevel].maxDistance - 100;
+  let flagGroundY = ground.getGroundHeightAt(flagX);
+  finishFlag = new FinishFlag(flagX, flagGroundY - 30, world); // Position flag slightly above ground
   
   // Use the spawningY that was already calculated by Ground.js
   console.log("Car spawning at Y:", spawningY);
   
   // Create car at the beginning of the terrain (x=300 to be safely on terrain with more clearance)
   car = new Car(300, spawningY, world);
+  
+  // Create UFO AI assistant
+  ufo = new UFO();
+  ufo.x = 300;
+  ufo.y = spawningY - 200;
+  
+  // Reset crash analysis data
+  recentGasUsage = [];
+  recentBrakeUsage = [];
+  recentSpeeds = [];
   
   // Set collision handler
   world.SetContactListener(listener);
@@ -407,25 +578,49 @@ function initializeGame() {
   
   // Reset UI
   updateUI();
+  updateLevelUI();
+}
+
+// Function to draw the sky background
+function drawSkyBackground() {
+  // Draw the sky sprite to cover the entire screen
+  // We'll tile it or stretch it to fill the viewport
+  let skyWidth = skySprite.width;
+  let skyHeight = skySprite.height;
+  
+  // Calculate how many tiles we need to cover the screen
+  let tilesX = Math.ceil(width / skyWidth) + 1;
+  let tilesY = Math.ceil(height / skyHeight) + 1;
+  
+  // Calculate offset based on camera pan to create parallax effect
+  let skyOffsetX = (panX * 0.1) % skyWidth; // Slow parallax movement
+  let skyOffsetY = (panY * 0.05) % skyHeight; // Very slow vertical movement
+  
+  // Draw tiled sky background
+  for (let x = -1; x < tilesX; x++) {
+    for (let y = -1; y < tilesY; y++) {
+      image(skySprite, 
+        x * skyWidth - skyOffsetX, 
+        y * skyHeight - skyOffsetY, 
+        skyWidth, 
+        skyHeight);
+    }
+  }
 }
 
 function draw() {
   if (!gameStarted && !gameOver && !levelCompleted) {
-    background(135, 206, 235); // Sky blue
+    // Draw sky background instead of solid color
+    drawSkyBackground();
     
-    // Show start screen
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(32);
-    text("Hill Climb Racing", width/2, height/2 - 100);
-    textSize(18);
-    text(`Level ${currentLevel + 1}: ${levels[currentLevel].name}`, width/2, height/2 - 50);
-    text("Press SPACE to start or use the gas pedal", width/2, height/2);
-    text("Use gas and brake pedals, arrow keys, or controller triggers", width/2, height/2 + 50);
+    // Custom play screen will handle the start screen display
+    // No old text needed here anymore
+    
     return;
   }
   
   if (gameOver || levelCompleted) {
+    // Don't update or draw game elements when over or completed
     return; // Don't update game when over or completed
   }
   
@@ -491,6 +686,19 @@ function draw() {
   // Update visual indicators
   updateIndicators();
   
+  // Track data for crash analysis
+  recentGasUsage.push(gasIntensity);
+  recentBrakeUsage.push(brakeIntensity);
+  let currentSpeed = Math.abs(car.chassisBody.GetLinearVelocity().x * 3.6 * SCALE / 100);
+  recentSpeeds.push(currentSpeed);
+  
+  // Keep only recent data (last 3 seconds)
+  if (recentGasUsage.length > analysisWindowSize) {
+    recentGasUsage.shift();
+    recentBrakeUsage.shift();
+    recentSpeeds.shift();
+  }
+  
   // Update physics
   world.Step(1 / 60, 10, 10);
   world.ClearForces();
@@ -498,8 +706,30 @@ function draw() {
   // Update car
   car.update();
   
+  // Update UFO
+  let ufoCarX = car.chassisBody.GetPosition().x * SCALE;
+  let ufoCarY = car.chassisBody.GetPosition().y * SCALE;
+  ufo.update(ufoCarX, ufoCarY);
+  
   // Check for car death
   if (car.dead) {
+    console.log("=== CAR IS DEAD - TRIGGERING UFO ANALYSIS ===");
+    
+    // Calculate average usage in the last moments before crash
+    let avgGas = recentGasUsage.length > 0 ? recentGasUsage.reduce((a, b) => a + b, 0) / recentGasUsage.length : 0;
+    let avgBrake = recentBrakeUsage.length > 0 ? recentBrakeUsage.reduce((a, b) => a + b, 0) / recentBrakeUsage.length : 0;
+    let avgSpeed = recentSpeeds.length > 0 ? recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length : 0;
+    
+    console.log("Crash data arrays length:", recentGasUsage.length, recentBrakeUsage.length, recentSpeeds.length);
+    console.log("Crash data - Gas:", avgGas, "Brake:", avgBrake, "Speed:", avgSpeed);
+    console.log("Recent gas usage sample:", recentGasUsage.slice(-10));
+    console.log("Recent brake usage sample:", recentBrakeUsage.slice(-10));
+    console.log("Recent speeds sample:", recentSpeeds.slice(-10));
+    
+    // Trigger UFO crash analysis
+    ufo.onCrash(avgGas, avgBrake, avgSpeed, "hilly");
+    console.log("UFO onCrash called - UFO crashed state:", ufo.crashed);
+    
     gameOver = true;
     showGameOverScreen();
     return;
@@ -533,8 +763,8 @@ function draw() {
   let carY = car.chassisBody.GetPosition().y * SCALE;
   panY = lerp(panY, carY - height * 0.7, 0.05);
   
-  // Draw background
-  background(135, 206, 235); // Sky blue
+  // Draw sky background instead of solid color
+  drawSkyBackground();
   
   // Draw terrain
   ground.show();
@@ -545,45 +775,61 @@ function draw() {
   // Draw car
   car.show();
   
+  // Draw UFO
+  ufo.show();
+  
   // Update UI
   updateUI();
 }
 
 function updateUI() {
   // Update distance display
-  document.getElementById('distance').textContent = maxDistanceReached.toFixed(1) + 'm';
+  document.getElementById('distance').textContent = maxDistanceReached.toFixed(1);
   
   // Update speed (simple calculation based on velocity)
   let speed = Math.abs(car.chassisBody.GetLinearVelocity().x * 3.6 * SCALE / 100);
-  document.getElementById('speed').textContent = speed.toFixed(0) + ' km/h';
+  document.getElementById('speed').textContent = speed.toFixed(0);
   
   // Update remaining distance
   let remaining = Math.max(0, (levels[currentLevel].maxDistance / 100) - maxDistanceReached);
-  document.getElementById('remainingDistance').textContent = remaining.toFixed(0) + 'm';
+  document.getElementById('remainingDistance').textContent = remaining.toFixed(0);
 }
 
 function updateLevelUI() {
   document.getElementById('currentLevelNum').textContent = currentLevel + 1;
   document.getElementById('currentLevelName').textContent = levels[currentLevel].name;
-  document.getElementById('levelBestScore').textContent = levelBestScores[currentLevel].toFixed(1) + 'm';
+  
+  // Get best score from localStorage for current level
+  let bestKey = `bestScore_level_${currentLevel}`;
+  let currentBest = localStorage.getItem(bestKey) || 0;
+  document.getElementById('levelBestScore').textContent = currentBest;
 }
 
 function showGameOverScreen() {
   let gameOverScreen = document.getElementById('gameOverScreen');
   let finalDistance = document.getElementById('finalDistance');
   let bestScore = document.getElementById('bestScore');
+  let ufoAdvice = document.getElementById('ufoAdvice');
   
   let distance = Math.floor(car.maxDistance);
-  finalDistance.textContent = distance + 'm';
+  finalDistance.textContent = distance;
   
   // Save best score for this level
   let bestKey = `bestScore_level_${currentLevel}`;
   let currentBest = localStorage.getItem(bestKey) || 0;
   if (distance > currentBest) {
     localStorage.setItem(bestKey, distance);
-    bestScore.textContent = distance + 'm (NEW BEST!)';
+    bestScore.textContent = distance + ' (NEW BEST!)';
+    updateLevelUI(); // Update the level UI to show new best score
   } else {
-    bestScore.textContent = currentBest + 'm';
+    bestScore.textContent = currentBest;
+  }
+  
+  // Display UFO advice if available
+  if (ufo && ufo.crashed && ufo.advice) {
+    ufoAdvice.textContent = ufo.advice;
+  } else {
+    ufoAdvice.textContent = "Drive carefully and balance your gas and brake usage!";
   }
   
   gameOverScreen.style.display = 'flex';
@@ -603,16 +849,17 @@ function showLevelCompleteScreen() {
   
   let distance = Math.floor(car.maxDistance);
   completedLevelName.textContent = `Level ${currentLevel + 1} Complete!`;
-  completedDistance.textContent = distance + 'm';
+  completedDistance.textContent = distance;
   
   // Save best score for this level
   let bestKey = `bestScore_level_${currentLevel}`;
   let currentBest = localStorage.getItem(bestKey) || 0;
   if (distance > currentBest) {
     localStorage.setItem(bestKey, distance);
-    completedBestScore.textContent = distance + 'm (NEW BEST!)';
+    completedBestScore.textContent = distance + ' (NEW BEST!)';
+    updateLevelUI(); // Update the level UI to show new best score
   } else {
-    completedBestScore.textContent = currentBest + 'm';
+    completedBestScore.textContent = currentBest;
   }
   
   // Show/hide next level button based on available levels
@@ -646,6 +893,9 @@ function keyPressed() {
     if (levelCompleted && currentLevel < levels.length - 1) {
       nextLevel();
     }
+  } else if (key === '1') {
+    // Reset to level 1
+    resetToLevel1();
   }
 }
 
@@ -657,6 +907,7 @@ function keyReleased() {
 function restartLevel() {
   gameOverScreen.style.display = 'none';
   levelCompleteScreen.style.display = 'none';
+  ufo.reset(); // Reset UFO state
   initializeGame();
 }
 
@@ -665,6 +916,7 @@ function nextLevel() {
     currentLevel++;
     localStorage.setItem('hillClimbCurrentLevel', currentLevel.toString());
     levelCompleteScreen.style.display = 'none';
+    ufo.reset(); // Reset UFO state
     initializeGame();
   }
 }

@@ -1,6 +1,10 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  
+  <!-- Custom Play Screen Styles -->
+  <link rel="stylesheet" type="text/css" href="playscreen.css">
+  
   <script language="javascript" type="text/javascript" src="libraries/p5.js"></script>
   <script language="javascript" src="libraries/p5.dom.js"></script>
   <script language="javascript" src="libraries/p5.sound.js"></script>
@@ -11,6 +15,10 @@
   <script language="javascript" type="text/javascript" src="Car.js"></script>
   <script language="javascript" type="text/javascript" src="Ground.js"></script>
   <script language="javascript" type="text/javascript" src="Person.js"></script>
+  
+  <!-- Custom Play Screen Scripts -->
+  <script language="javascript" type="text/javascript" src="playscreen.js"></script>
+  <script language="javascript" type="text/javascript" src="playscreen-integration.js"></script>
 
   <style>
     * {
@@ -120,9 +128,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.9);
       display: none;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -130,22 +137,96 @@
       text-align: center;
     }
     
-    #gameOverScreen h1 {
+    .crash-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      max-width: 1200px;
+      width: 90%;
+    }
+    
+    .ufo-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 500px;
+    }
+    
+    .ufo-image {
+      width: 200px;
+      height: 125px;
+      background-image: url('Pics/ufo.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      margin-bottom: 20px;
+      animation: float 2s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .speech-bubble {
+      position: relative;
+      background: #ffffff;
+      color: #333;
+      padding: 20px;
+      border-radius: 20px;
+      max-width: 400px;
+      font-size: 16px;
+      line-height: 1.4;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      text-align: left;
+    }
+    
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 15px solid #ffffff;
+    }
+    
+    .speech-bubble .ufo-title {
+      font-weight: bold;
+      color: #4a90e2;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    
+    .crash-details {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 500px;
+    }
+    
+    .crash-details h1 {
       font-size: 72px;
       color: #ff6b6b;
       margin-bottom: 30px;
       text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
     }
     
-    #gameOverScreen .score {
-      font-size: 48px;
-      margin: 20px 0;
+    .crash-details .score {
+      font-size: 36px;
+      margin: 15px 0;
       color: #51cf66;
     }
     
-    #gameOverScreen .restart {
-      font-size: 32px;
-      margin-top: 40px;
+    .crash-details .restart {
+      font-size: 28px;
+      margin-top: 30px;
       padding: 15px 30px;
       background: #51cf66;
       color: white;
@@ -156,8 +237,14 @@
       transition: background 0.2s;
     }
     
-    #gameOverScreen .restart:hover {
+    .crash-details .restart:hover {
       background: #40a954;
+    }
+    
+    .crash-details .restart-hint {
+      margin-top: 20px;
+      font-size: 18px;
+      opacity: 0.8;
     }
     
     #levelCompleteScreen {
@@ -323,11 +410,22 @@
     </div>
     
     <div id="gameOverScreen">
-      <h1>CRASHED!</h1>
-      <div class="score">Final Distance: <span id="finalDistance">0</span>m</div>
-      <div class="score">Best Score: <span id="bestScore">0</span>m</div>
-      <button class="restart" id="restartBtn">RESTART LEVEL</button>
-      <div style="margin-top: 20px; font-size: 18px; opacity: 0.8;">Press R to restart</div>
+      <div class="crash-container">
+        <div class="ufo-section">
+          <div class="ufo-image"></div>
+          <div class="speech-bubble">
+            <div class="ufo-title">🛸 UFO AI Analysis</div>
+            <div id="ufoAdvice">Analyzing crash data...</div>
+          </div>
+        </div>
+        <div class="crash-details">
+          <h1>CRASHED!</h1>
+          <div class="score">Final Distance: <span id="finalDistance">0</span>m</div>
+          <div class="score">Best Score: <span id="bestScore">0</span>m</div>
+          <button class="restart" id="restartBtn">RESTART LEVEL</button>
+          <div class="restart-hint">Press R to restart</div>
+        </div>
+      </div>
     </div>
     
     <div id="levelCompleteScreen">

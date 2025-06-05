@@ -9,8 +9,8 @@ class Car {
     if (!this.player) {
       this.player = {
         shirtColorR: 100,
-        shirtColorG: 150,
-        shirtColorB: 255,
+        shirtColorG: 255,
+        shirtColorB: 100,
         dead: false
       };
     }
@@ -168,6 +168,12 @@ class Car {
   update() {
     let x = this.chassisBody.GetPosition().x * SCALE;
     let y = this.chassisBody.GetPosition().y * SCALE;
+    let angle = this.chassisBody.GetAngle();
+    
+    // Normalize angle to -PI to PI range
+    while (angle > PI) angle -= TWO_PI;
+    while (angle < -PI) angle += TWO_PI;
+    
     this.changeCount++;
 
     if (x > this.maxDistance) {
@@ -176,15 +182,105 @@ class Car {
         this.changeCount = 0;
       }
     } else {
-      // Only trigger death if car has been stuck for a very long time (15+ seconds)
-      if (this.changeCount > 900) {
+      // Only trigger death if car has made significant progress (>500m) AND has been stuck for a very long time
+      // This prevents idle death at the starting position
+      let hasMovedSignificantly = this.maxDistance > this.startingPosition.x + 500;
+      if (hasMovedSignificantly && this.changeCount > 900) {
+        console.log("Car died: stuck for too long after making progress");
         this.dead = true;
         if (this.player) this.player.dead = true;
       }
     }
 
+    // Get current velocity for crash detection
+    let velocity = this.chassisBody.GetLinearVelocity();
+    let speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    let angularVelocity = Math.abs(this.chassisBody.GetAngularVelocity());
+
+    // Check if car is upside down (angle between 90 and 270 degrees)
+    let isUpsideDown = Math.abs(angle) > PI/2;
+    
+    // IMMEDIATE CRASH CONDITIONS
+    // 1. Violent spinning (high angular velocity + upside down)
+    if (isUpsideDown && angularVelocity > 8) {
+      console.log("Car died: violent spinning crash", angularVelocity, angle);
+      this.dead = true;
+      if (this.player) this.player.dead = true;
+      return;
+    }
+    
+    // 2. Extreme angle (nearly completely upside down)
+    if (Math.abs(angle) > PI * 0.85) { // ~153 degrees
+      console.log("Car died: extreme flip", angle);
+      this.dead = true;
+      if (this.player) this.player.dead = true;
+      return;
+    }
+    
+    // 3. High speed + upside down combination
+    if (isUpsideDown && speed > 8) {
+      console.log("Car died: high speed flip", speed, angle);
+      this.dead = true;
+      if (this.player) this.player.dead = true;
+      return;
+    }
+    
+    // TIMED UPSIDE DOWN DETECTION (reduced from 3 seconds to 1 second)
+    if (isUpsideDown) {
+      if (!this.upsideDownTimer) {
+        this.upsideDownTimer = 0;
+      }
+      this.upsideDownTimer++;
+      
+      // Car dies if upside down for more than 1 second (60 frames at 60fps)
+      if (this.upsideDownTimer > 60) {
+        console.log("Car died: upside down for too long", angle);
+        this.dead = true;
+        if (this.player) this.player.dead = true;
+        return;
+      }
+    } else {
+      // Reset timer if car is right-side up
+      this.upsideDownTimer = 0;
+    }
+
+    // IMPACT DETECTION
+    // Store previous speed for impact detection
+    if (!this.lastSpeed) this.lastSpeed = speed;
+    let speedChange = Math.abs(speed - this.lastSpeed);
+    
+    // Detect sudden deceleration (impact)
+    if (speedChange > 5 && speed < 3 && isUpsideDown) {
+      console.log("Car died: sudden impact crash", speedChange, speed, angle);
+      this.dead = true;
+      if (this.player) this.player.dead = true;
+      return;
+    }
+    
+    this.lastSpeed = speed;
+
+    // Check for high-speed impacts
+    if (speed > 15) { // High speed threshold
+      if (!this.lastHighSpeedTime) {
+        this.lastHighSpeedTime = millis();
+      }
+    } else {
+      // If we suddenly went from high speed to low speed, check for crash
+      if (this.lastHighSpeedTime && (millis() - this.lastHighSpeedTime < 100)) {
+        // Sudden deceleration from high speed - likely a crash
+        if (speed < 2 && isUpsideDown) {
+          console.log("Car died: high-impact crash", speed, angle);
+          this.dead = true;
+          if (this.player) this.player.dead = true;
+          return;
+        }
+      }
+      this.lastHighSpeedTime = null;
+    }
+
     // Only trigger death if car falls way below the visible screen
     if (!this.dead && y > canvas.height + 500) {
+      console.log("Car died: fell off screen");
       this.dead = true;
       if (this.player) this.player.dead = true;
     }

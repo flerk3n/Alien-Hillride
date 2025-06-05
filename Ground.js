@@ -320,6 +320,22 @@ class Ground {
     }
     return returnList;
   }
+  
+  // Get the ground height at a specific X position
+  getGroundHeightAt(x) {
+    // Find the closest ground point at this X position
+    for (var i = 0; i < this.vectors.length - 1; i++) {
+      if (this.vectors[i].x * SCALE <= x && this.vectors[i + 1].x * SCALE >= x) {
+        // Interpolate between the two points
+        let t = (x - this.vectors[i].x * SCALE) / ((this.vectors[i + 1].x - this.vectors[i].x) * SCALE);
+        let groundY = lerp(this.vectors[i].y * SCALE, this.vectors[i + 1].y * SCALE, t);
+        return groundY;
+      }
+    }
+    // If not found, return the last point
+    return this.vectors[this.vectors.length - 1].y * SCALE;
+  }
+  
   showPoints(x, numberOfPositions, skip) {
     push();
     translate(-panX, -panY);
