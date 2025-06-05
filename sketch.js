@@ -430,18 +430,18 @@ listener.EndContact = function(contact) {
 }
 
 function preload() {
-  carSprite = loadImage("car.png");
-  headSprite = loadImage("head.png");
-  wheelSprite = loadImage("wheel.png");
-  skySprite = loadImage("sky.png");
-  ufoSprite = loadImage("ufo.png");
+  carSprite = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119375474-car.png");
+  headSprite = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119384750-head.png");
+  wheelSprite = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119392409-wheel.png");
+  skySprite = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119387873-sky.png");
+  ufoSprite = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119391652-ufo.png");
 
   // Load the available grass sprites
-  grassSprites[0] = loadImage("grass.png");
-  grassSprites[1] = loadImage("grass2.png");
-  grassSprites[2] = loadImage("grass3.png");
-  grassSprites[3] = loadImage("grass4.png");
-  grassSprites[4] = loadImage("grass5.png");
+  grassSprites[0] = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119376881-grass.png");
+  grassSprites[1] = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119378317-grass2.png");
+  grassSprites[2] = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119380703-grass3.png");
+  grassSprites[3] = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119381852-grass4.png");
+  grassSprites[4] = loadImage("https://cyberlife-stograge-cos-standard.s3.jp-tok.cloud-object-storage.appdomain.cloud/games/bbda4b03-6bd0-4554-837f-51a11a3a6fc8/assets/1749119383347-grass5.png");
 }
 
 function setup() {
