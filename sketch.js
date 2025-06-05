@@ -236,7 +236,7 @@ class UFO {
     // Analyze crash conditions and provide specific advice
     if (speed > 60) {
       advice = `CRASHED AT HIGH SPEED! You were going ${speed} km/h. Try using gas at ${Math.max(30, gasPercent - 20)}% and brake at ${Math.min(80, brakePercent + 30)}% on steep terrain.`;
-    } else if (gasPercent > 80 && speed > 40) {
+    } else if (gasPercent > 75) {
       advice = `TOO MUCH GAS! You were using ${gasPercent}% gas at ${speed} km/h. Try gas at ${Math.max(40, gasPercent - 30)}% and brake at ${Math.min(70, brakePercent + 20)}% for better control.`;
     } else if (brakePercent < 20 && speed > 35) {
       advice = `NOT ENOUGH BRAKING! You only used ${brakePercent}% brake at ${speed} km/h. Try gas at ${Math.max(50, gasPercent)}% and brake at ${Math.min(90, brakePercent + 40)}% before hills.`;
@@ -385,42 +385,12 @@ listener.BeginContact = function(contact) {
   // Check for head collision with ground
   if (userData1 && userData1.id == "head" && userData2 && userData2.id == "ground") {
     if (contact.GetFixtureA().GetBody().GetJointList() == null) return;
-    
-    // Trigger UFO analysis for head collision crash
-    console.log("=== HEAD COLLISION DETECTED - TRIGGERING UFO ANALYSIS ===");
-    
-    // Calculate average usage in the last moments before crash
-    let avgGas = recentGasUsage.length > 0 ? recentGasUsage.reduce((a, b) => a + b, 0) / recentGasUsage.length : 0;
-    let avgBrake = recentBrakeUsage.length > 0 ? recentBrakeUsage.reduce((a, b) => a + b, 0) / recentBrakeUsage.length : 0;
-    let avgSpeed = recentSpeeds.length > 0 ? recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length : 0;
-    
-    console.log("Head collision crash data - Gas:", avgGas, "Brake:", avgBrake, "Speed:", avgSpeed);
-    
-    // Trigger UFO crash analysis
-    ufo.onCrash(avgGas, avgBrake, avgSpeed, "hilly");
-    console.log("UFO onCrash called for head collision - UFO crashed state:", ufo.crashed);
-    
     gameOver = true;
     showGameOverScreen();
   }
   
   if (userData2 && userData2.id == "head" && userData1 && userData1.id == "ground") {
     if (contact.GetFixtureB().GetBody().GetJointList() == null) return;
-    
-    // Trigger UFO analysis for head collision crash
-    console.log("=== HEAD COLLISION DETECTED - TRIGGERING UFO ANALYSIS ===");
-    
-    // Calculate average usage in the last moments before crash
-    let avgGas = recentGasUsage.length > 0 ? recentGasUsage.reduce((a, b) => a + b, 0) / recentGasUsage.length : 0;
-    let avgBrake = recentBrakeUsage.length > 0 ? recentBrakeUsage.reduce((a, b) => a + b, 0) / recentBrakeUsage.length : 0;
-    let avgSpeed = recentSpeeds.length > 0 ? recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length : 0;
-    
-    console.log("Head collision crash data - Gas:", avgGas, "Brake:", avgBrake, "Speed:", avgSpeed);
-    
-    // Trigger UFO crash analysis
-    ufo.onCrash(avgGas, avgBrake, avgSpeed, "hilly");
-    console.log("UFO onCrash called for head collision - UFO crashed state:", ufo.crashed);
-    
     gameOver = true;
     showGameOverScreen();
   }
@@ -641,8 +611,75 @@ function draw() {
     // Draw sky background instead of solid color
     drawSkyBackground();
     
-    // Custom play screen will handle the start screen display
-    // No old text needed here anymore
+    // Show level information and play button
+    push();
+    
+    // Draw semi-transparent overlay for better text visibility
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+    
+    // Level information display
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    fill(255, 255, 255);
+    stroke(0, 0, 0);
+    strokeWeight(3);
+    text(`Level ${currentLevel + 1}`, width / 2, height / 2 - 150);
+    
+    textSize(32);
+    fill(255, 255, 0);
+    text(levels[currentLevel].name, width / 2, height / 2 - 100);
+    
+    // Distance goal
+    textSize(24);
+    fill(200, 200, 255);
+    text(`Goal: ${levels[currentLevel].maxDistance / 100}m`, width / 2, height / 2 - 60);
+    
+    // Play button
+    let buttonWidth = 200;
+    let buttonHeight = 80;
+    let buttonX = width / 2;
+    let buttonY = height / 2 + 20;
+    
+    // Button background
+    fill(0, 150, 0);
+    stroke(255);
+    strokeWeight(3);
+    rectMode(CENTER);
+    rect(buttonX, buttonY, buttonWidth, buttonHeight, 15);
+    
+    // Button text
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(32);
+    textStyle(BOLD);
+    text("START", buttonX, buttonY);
+    
+    // Instructions
+    textSize(18);
+    fill(255, 255, 255);
+    text("Press SPACE, click START, or use pedals to begin", width / 2, height / 2 + 100);
+    
+    // Controls info
+    textSize(16);
+    fill(200, 200, 200);
+    text("Controls: Arrow Keys / Space / Touch Pedals / Controller", width / 2, height / 2 + 130);
+    
+    // Best score for current level
+    let bestKey = `bestScore_level_${currentLevel}`;
+    let currentBest = localStorage.getItem(bestKey) || 0;
+    if (currentBest > 0) {
+      textSize(20);
+      fill(0, 255, 0);
+      text(`Best Score: ${currentBest}m`, width / 2, height / 2 + 160);
+    }
+    
+    // Reset level instruction
+    textSize(14);
+    fill(180, 180, 180);
+    text("Press '1' to reset to Level 1", width / 2, height / 2 + 190);
+    
+    pop();
     
     return;
   }
@@ -854,20 +891,9 @@ function showGameOverScreen() {
   }
   
   // Display UFO advice if available
-  console.log("=== UFO ADVICE DEBUG ===");
-  console.log("UFO exists:", !!ufo);
-  console.log("UFO crashed:", ufo ? ufo.crashed : "N/A");
-  console.log("UFO advice:", ufo ? ufo.advice : "N/A");
-  console.log("UFO advice length:", ufo && ufo.advice ? ufo.advice.length : "N/A");
-  
   if (ufo && ufo.crashed && ufo.advice) {
-    console.log("Displaying specific UFO advice:", ufo.advice);
     ufoAdvice.textContent = ufo.advice;
   } else {
-    console.log("Displaying generic UFO advice - Reason:", 
-      !ufo ? "UFO doesn't exist" : 
-      !ufo.crashed ? "UFO not crashed" : 
-      !ufo.advice ? "No advice generated" : "Unknown");
     ufoAdvice.textContent = "Drive carefully and balance your gas and brake usage!";
   }
   
@@ -943,6 +969,24 @@ function keyReleased() {
   // No need to manually track key releases
 }
 
+function mousePressed() {
+  // Handle START button click when game hasn't started
+  if (!gameStarted && !gameOver && !levelCompleted) {
+    let buttonWidth = 200;
+    let buttonHeight = 80;
+    let buttonX = width / 2;
+    let buttonY = height / 2 + 20;
+    
+    // Check if click is within button bounds
+    if (mouseX >= buttonX - buttonWidth / 2 && 
+        mouseX <= buttonX + buttonWidth / 2 && 
+        mouseY >= buttonY - buttonHeight / 2 && 
+        mouseY <= buttonY + buttonHeight / 2) {
+      gameStarted = true;
+    }
+  }
+}
+
 function restartLevel() {
   gameOverScreen.style.display = 'none';
   levelCompleteScreen.style.display = 'none';
@@ -954,7 +998,13 @@ function nextLevel() {
   if (currentLevel < levels.length - 1) {
     currentLevel++;
     localStorage.setItem('hillClimbCurrentLevel', currentLevel.toString());
-    levelCompleteScreen.style.display = 'none';
+    
+    // Hide the level complete screen properly
+    const levelCompleteScreen = document.getElementById('levelCompleteScreen');
+    if (levelCompleteScreen) {
+      levelCompleteScreen.style.display = 'none';
+    }
+    
     ufo.reset(); // Reset UFO state
     initializeGame();
   }
