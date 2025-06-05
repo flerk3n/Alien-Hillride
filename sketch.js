@@ -385,12 +385,42 @@ listener.BeginContact = function(contact) {
   // Check for head collision with ground
   if (userData1 && userData1.id == "head" && userData2 && userData2.id == "ground") {
     if (contact.GetFixtureA().GetBody().GetJointList() == null) return;
+    
+    // Trigger UFO analysis for head collision crash
+    console.log("=== HEAD COLLISION DETECTED - TRIGGERING UFO ANALYSIS ===");
+    
+    // Calculate average usage in the last moments before crash
+    let avgGas = recentGasUsage.length > 0 ? recentGasUsage.reduce((a, b) => a + b, 0) / recentGasUsage.length : 0;
+    let avgBrake = recentBrakeUsage.length > 0 ? recentBrakeUsage.reduce((a, b) => a + b, 0) / recentBrakeUsage.length : 0;
+    let avgSpeed = recentSpeeds.length > 0 ? recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length : 0;
+    
+    console.log("Head collision crash data - Gas:", avgGas, "Brake:", avgBrake, "Speed:", avgSpeed);
+    
+    // Trigger UFO crash analysis
+    ufo.onCrash(avgGas, avgBrake, avgSpeed, "hilly");
+    console.log("UFO onCrash called for head collision - UFO crashed state:", ufo.crashed);
+    
     gameOver = true;
     showGameOverScreen();
   }
   
   if (userData2 && userData2.id == "head" && userData1 && userData1.id == "ground") {
     if (contact.GetFixtureB().GetBody().GetJointList() == null) return;
+    
+    // Trigger UFO analysis for head collision crash
+    console.log("=== HEAD COLLISION DETECTED - TRIGGERING UFO ANALYSIS ===");
+    
+    // Calculate average usage in the last moments before crash
+    let avgGas = recentGasUsage.length > 0 ? recentGasUsage.reduce((a, b) => a + b, 0) / recentGasUsage.length : 0;
+    let avgBrake = recentBrakeUsage.length > 0 ? recentBrakeUsage.reduce((a, b) => a + b, 0) / recentBrakeUsage.length : 0;
+    let avgSpeed = recentSpeeds.length > 0 ? recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length : 0;
+    
+    console.log("Head collision crash data - Gas:", avgGas, "Brake:", avgBrake, "Speed:", avgSpeed);
+    
+    // Trigger UFO crash analysis
+    ufo.onCrash(avgGas, avgBrake, avgSpeed, "hilly");
+    console.log("UFO onCrash called for head collision - UFO crashed state:", ufo.crashed);
+    
     gameOver = true;
     showGameOverScreen();
   }
@@ -824,9 +854,20 @@ function showGameOverScreen() {
   }
   
   // Display UFO advice if available
+  console.log("=== UFO ADVICE DEBUG ===");
+  console.log("UFO exists:", !!ufo);
+  console.log("UFO crashed:", ufo ? ufo.crashed : "N/A");
+  console.log("UFO advice:", ufo ? ufo.advice : "N/A");
+  console.log("UFO advice length:", ufo && ufo.advice ? ufo.advice.length : "N/A");
+  
   if (ufo && ufo.crashed && ufo.advice) {
+    console.log("Displaying specific UFO advice:", ufo.advice);
     ufoAdvice.textContent = ufo.advice;
   } else {
+    console.log("Displaying generic UFO advice - Reason:", 
+      !ufo ? "UFO doesn't exist" : 
+      !ufo.crashed ? "UFO not crashed" : 
+      !ufo.advice ? "No advice generated" : "Unknown");
     ufoAdvice.textContent = "Drive carefully and balance your gas and brake usage!";
   }
   
