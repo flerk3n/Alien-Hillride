@@ -431,19 +431,19 @@ listener.EndContact = function(contact) {
 }
 
 function preload() {
-  carSprite = loadImage("Pics/car.png");
-  headSprite = loadImage("Pics/head.png");
-  wheelSprite = loadImage("Pics/wheel.png");
-  skySprite = loadImage("Pics/sky.png");
-  darknessSprite = loadImage("Pics/darkness.png");
-  ufoSprite = loadImage("Pics/ufo.png");
+  carSprite = loadImage("car.png");
+  headSprite = loadImage("head.png");
+  wheelSprite = loadImage("wheel.png");
+  skySprite = loadImage("sky.png");
+  darknessSprite = loadImage("darkness.png");
+  ufoSprite = loadImage("ufo.png");
 
   // Load the available grass sprites
-  grassSprites[0] = loadImage("Pics/grass.png");
-  grassSprites[1] = loadImage("Pics/grass2.png");
-  grassSprites[2] = loadImage("Pics/grass3.png");
-  grassSprites[3] = loadImage("Pics/grass4.png");
-  grassSprites[4] = loadImage("Pics/grass5.png");
+  grassSprites[0] = loadImage("grass.png");
+  grassSprites[1] = loadImage("grass2.png");
+  grassSprites[2] = loadImage("grass3.png");
+  grassSprites[3] = loadImage("grass4.png");
+  grassSprites[4] = loadImage("grass5.png");
 }
 
 function setup() {
